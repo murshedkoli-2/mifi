@@ -1,19 +1,29 @@
 import { CURRENCIES, useSettings } from '@/context/SettingsContext';
 import { authenticateWithBiometrics } from '@/lib/biometrics';
+import { cancelAllNotifications, requestNotificationPermissions, scheduleDailyNotification } from '@/lib/notifications';
 import { supabase } from '@/lib/supabase';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Card, Divider, List, Modal, Portal, RadioButton, Switch, Text, TextInput } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function SettingsScreen() {
     const router = useRouter();
-    const { currency, setCurrency, biometricEnabled, setBiometricEnabled } = useSettings();
-    const [notifications, setNotifications] = useState(true);
+    const {
+        currency,
+        setCurrency,
+        biometricEnabled,
+        setBiometricEnabled,
+        notificationsEnabled,
+        setNotificationsEnabled,
+        notificationTime,
+        setNotificationTime,
+    } = useSettings();
     const [email, setEmail] = useState('');
     const [userName, setUserName] = useState('User');
 
@@ -30,6 +40,10 @@ export default function SettingsScreen() {
     const [biometricPromptVisible, setBiometricPromptVisible] = useState(false);
     const [verifyPassword, setVerifyPassword] = useState('');
     const [verifyLoading, setVerifyLoading] = useState(false);
+
+    // Time Picker State
+    const [timePickerVisible, setTimePickerVisible] = useState(false);
+    const [tempTime, setTempTime] = useState(new Date());
 
     React.useEffect(() => {
         getUserEmail().then(setEmail);
@@ -144,6 +158,68 @@ export default function SettingsScreen() {
         }
     };
 
+    const handleNotificationToggle = async (enabled: boolean) => {
+        if (enabled) {
+            // Request permission
+            const hasPermission = await requestNotificationPermissions();
+            if (!hasPermission) {
+                Alert.alert('Permission Denied', 'Please enable notifications in your device settings');
+                return;
+            }
+
+            // Schedule notification at current time setting
+            await scheduleDailyNotification(notificationTime.hour, notificationTime.minute);
+        } else {
+            // Cancel all notifications
+            await cancelAllNotifications();
+        }
+
+        await setNotificationsEnabled(enabled);
+    };
+
+    const handleTimeChange = (event: any, selectedTime?: Date) => {
+        if (Platform.OS === 'android') {
+            setTimePickerVisible(false);
+        }
+
+        if (selectedTime) {
+            setTempTime(selectedTime);
+            if (Platform.OS === 'android') {
+                // On Android, save immediately
+                const newTime = {
+                    hour: selectedTime.getHours(),
+                    minute: selectedTime.getMinutes(),
+                };
+                handleTimeSave(newTime);
+            }
+        }
+    };
+
+    const handleTimeSave = async (time: { hour: number; minute: number }) => {
+        await setNotificationTime(time);
+
+        // Reschedule notification if enabled
+        if (notificationsEnabled) {
+            await scheduleDailyNotification(time.hour, time.minute);
+        }
+
+        setTimePickerVisible(false);
+    };
+
+    const showTimePicker = () => {
+        const date = new Date();
+        date.setHours(notificationTime.hour, notificationTime.minute);
+        setTempTime(date);
+        setTimePickerVisible(true);
+    };
+
+    const formatTime = (hour: number, minute: number) => {
+        const period = hour >= 12 ? 'PM' : 'AM';
+        const displayHour = hour % 12 || 12;
+        const displayMinute = minute.toString().padStart(2, '0');
+        return `${displayHour}:${displayMinute} ${period}`;
+    };
+
     return (
         <View style={styles.container}>
             {/* Header with Gradient */}
@@ -188,14 +264,6 @@ export default function SettingsScreen() {
                             left={props => <List.Icon {...props} icon={currency.icon} />}
                             right={props => <List.Icon {...props} icon="chevron-right" />}
                             onPress={() => setCurrencyModalVisible(true)}
-                        />
-                        <Divider />
-                        <List.Item
-                            title="Default Account"
-                            description="Main Bank"
-                            left={props => <List.Icon {...props} icon="bank" />}
-                            right={props => <List.Icon {...props} icon="chevron-right" />}
-                            onPress={() => console.log('Change default account')}
                         />
                     </Card>
                 </View>
@@ -242,17 +310,29 @@ export default function SettingsScreen() {
                     <Text style={styles.sectionTitle}>Notifications</Text>
                     <Card style={styles.card} elevation={1}>
                         <List.Item
-                            title="Push Notifications"
-                            description="Receive transaction alerts"
+                            title="Daily Reminders"
+                            description="Notify about accounts without transactions"
                             left={props => <List.Icon {...props} icon="bell" />}
                             right={() => (
                                 <Switch
-                                    value={notifications}
-                                    onValueChange={setNotifications}
+                                    value={notificationsEnabled}
+                                    onValueChange={handleNotificationToggle}
                                     color="#3B82F6"
                                 />
                             )}
                         />
+                        {notificationsEnabled && (
+                            <>
+                                <Divider />
+                                <List.Item
+                                    title="Notification Time"
+                                    description={formatTime(notificationTime.hour, notificationTime.minute)}
+                                    left={props => <List.Icon {...props} icon="clock-outline" />}
+                                    right={props => <List.Icon {...props} icon="chevron-right" />}
+                                    onPress={showTimePicker}
+                                />
+                            </>
+                        )}
                     </Card>
                 </View>
 
@@ -390,6 +470,39 @@ export default function SettingsScreen() {
                         <Button mode="contained" onPress={handleEnableBiometric} style={styles.modalButton} loading={verifyLoading}>Enable</Button>
                     </View>
                 </Modal>
+
+                {/* Time Picker Modal */}
+                {Platform.OS === 'ios' ? (
+                    <Modal visible={timePickerVisible} onDismiss={() => setTimePickerVisible(false)} contentContainerStyle={styles.modalContainer}>
+                        <Text style={styles.modalTitle}>Set Notification Time</Text>
+                        <DateTimePicker
+                            value={tempTime}
+                            mode="time"
+                            display="spinner"
+                            onChange={handleTimeChange}
+                        />
+                        <View style={styles.modalButtons}>
+                            <Button onPress={() => setTimePickerVisible(false)} style={styles.modalButton}>Cancel</Button>
+                            <Button
+                                mode="contained"
+                                onPress={() => handleTimeSave({
+                                    hour: tempTime.getHours(),
+                                    minute: tempTime.getMinutes()
+                                })}
+                                style={styles.modalButton}
+                            >
+                                Save
+                            </Button>
+                        </View>
+                    </Modal>
+                ) : timePickerVisible && (
+                    <DateTimePicker
+                        value={tempTime}
+                        mode="time"
+                        display="default"
+                        onChange={handleTimeChange}
+                    />
+                )}
             </Portal>
         </View>
     );

@@ -14,6 +14,7 @@ import AnimatedSplashScreen from '@/components/AnimatedSplashScreen';
 import BiometricProtected from '@/components/BiometricProtected';
 import { useColorScheme } from '@/components/useColorScheme';
 import { SettingsProvider } from '@/context/SettingsContext';
+import '@/lib/notifications'; // Register background tasks
 
 export {
   // Catch any errors thrown by the Layout component.
