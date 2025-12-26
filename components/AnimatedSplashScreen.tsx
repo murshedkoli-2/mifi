@@ -82,8 +82,8 @@ export default function AnimatedSplashScreen({ onFinish }: AnimatedSplashScreenP
                     </Animated.View>
 
                     <Animated.View style={textAnimatedStyle}>
-                        <Text style={styles.appName}>ExpoFinance</Text>
-                        <Text style={styles.tagline}>Your Financial Journey</Text>
+                        <Text style={styles.appName}>MiFi</Text>
+                        <Text style={styles.tagline}>My Finance</Text>
                     </Animated.View>
                 </View>
             </LinearGradient>

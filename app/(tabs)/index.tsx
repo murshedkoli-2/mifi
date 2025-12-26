@@ -1,3 +1,4 @@
+import QuickAddModal from '@/components/QuickAddModal';
 import StatCard from '@/components/StatCard';
 import TransactionCard from '@/components/TransactionCard';
 import { useSettings } from '@/context/SettingsContext';
@@ -26,6 +27,7 @@ export default function HomeScreen() {
   const [monthlyIncome, setMonthlyIncome] = useState(0);
   const [monthlyExpenses, setMonthlyExpenses] = useState(0);
   const [recentTransactions, setRecentTransactions] = useState<TransactionWithDetails[]>([]);
+  const [quickAddVisible, setQuickAddVisible] = useState(false);
 
   const loadData = async (isRefreshing = false) => {
     try {
@@ -81,7 +83,7 @@ export default function HomeScreen() {
           <View style={styles.headerContent}>
             <View>
               <Text style={styles.greeting}>{getGreeting()}👋</Text>
-              <Text style={styles.headerTitle}>ExpoFinance</Text>
+              <Text style={styles.headerTitle}>MiFi</Text>
             </View>
             <View style={styles.notificationIcon}>
               <FontAwesome name="bell-o" size={24} color="#FFFFFF" />
@@ -134,6 +136,15 @@ export default function HomeScreen() {
               onPress={() => router.push('/(tabs)/add-transaction')}
             >
               Add Transaction
+            </Button>
+            <Button
+              mode="contained"
+              icon="flash"
+              style={[styles.actionButton, { backgroundColor: '#8B5CF6' }]}
+              contentStyle={styles.actionButtonContent}
+              onPress={() => setQuickAddVisible(true)}
+            >
+              Quick Add
             </Button>
             <Button
               mode="outlined"
@@ -218,6 +229,13 @@ export default function HomeScreen() {
 
         <View style={styles.bottomSpacing} />
       </ScrollView>
+
+      {/* Quick Add Modal */}
+      <QuickAddModal
+        visible={quickAddVisible}
+        onDismiss={() => setQuickAddVisible(false)}
+        onComplete={() => loadData()}
+      />
 
       {/* Floating Action Button */}
       <FAB

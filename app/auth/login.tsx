@@ -120,7 +120,7 @@ export default function Login() {
                                 <View style={styles.logoContainer}>
                                     <Text style={styles.logoEmoji}>💰</Text>
                                 </View>
-                                <Text style={styles.appName}>ExpoFinance</Text>
+                                <Text style={styles.appName}>MiFi</Text>
                                 <Text style={styles.tagline}>Smart money management</Text>
                             </View>
 

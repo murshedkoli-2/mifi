@@ -126,7 +126,7 @@ export default function Signup() {
                                 <View style={styles.logoContainer}>
                                     <Text style={styles.logoEmoji}>💰</Text>
                                 </View>
-                                <Text style={styles.appName}>ExpoFinance</Text>
+                                <Text style={styles.appName}>MiFi</Text>
                                 <Text style={styles.tagline}>Start your financial journey</Text>
                             </View>
 
