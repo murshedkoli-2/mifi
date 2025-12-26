@@ -1,10 +1,10 @@
 import { useSettings } from '@/context/SettingsContext';
+import { useAlert } from '@/hooks/useAlert';
 import { Account, addTransaction, getAccounts, updateAccountBalance } from '@/lib/database';
 import { supabase } from '@/lib/supabase';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-    Alert,
     Dimensions,
     Modal,
     ScrollView,
@@ -13,6 +13,7 @@ import {
     View,
 } from 'react-native';
 import { Button, Card, Text, TextInput } from 'react-native-paper';
+import CustomAlert from './CustomAlert';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = width - 80;
@@ -25,6 +26,7 @@ interface QuickAddModalProps {
 
 export default function QuickAddModal({ visible, onDismiss, onComplete }: QuickAddModalProps) {
     const { currency } = useSettings();
+    const alert = useAlert();
     const [accounts, setAccounts] = useState<Account[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [newBalances, setNewBalances] = useState<{ [accountId: string]: string }>({});
@@ -72,7 +74,7 @@ export default function QuickAddModal({ visible, onDismiss, onComplete }: QuickA
 
         const newBalance = parseFloat(newBalanceStr);
         if (isNaN(newBalance)) {
-            Alert.alert('Error', 'Please enter a valid number');
+            alert.showError('Error', 'Please enter a valid number');
             return;
         }
 
@@ -109,14 +111,14 @@ export default function QuickAddModal({ visible, onDismiss, onComplete }: QuickA
             // Update account balance
             await updateAccountBalance(account.id, newBalance);
 
-            Alert.alert(
+            alert.showSuccess(
                 'Success',
                 `${account.name} updated!\n${difference > 0 ? 'Income' : 'Expense'}: ${currency.symbol}${amount.toFixed(2)}\nNew balance: ${currency.symbol}${newBalance.toFixed(2)}`
             );
 
         } catch (error) {
             console.error('Error updating balance:', error);
-            Alert.alert('Error', 'Failed to update balance');
+            alert.showError('Error', 'Failed to update balance');
         } finally {
             setLoading(false);
         }
@@ -138,130 +140,142 @@ export default function QuickAddModal({ visible, onDismiss, onComplete }: QuickA
     };
 
     return (
-        <Modal
-            visible={visible}
-            animationType="slide"
-            transparent
-            onRequestClose={onDismiss}
-        >
-            <View style={styles.modalOverlay}>
-                <View style={styles.modalContainer}>
-                    <View style={styles.header}>
-                        <Text style={styles.title}>Quick Add</Text>
-                        <TouchableOpacity onPress={onDismiss}>
-                            <FontAwesome name="times" size={24} color="#6B7280" />
-                        </TouchableOpacity>
-                    </View>
-
-                    <Text style={styles.subtitle}>
-                        Update account balances - differences will be auto-adjusted
-                    </Text>
-
-                    {accounts.length === 0 ? (
-                        <View style={styles.emptyState}>
-                            <FontAwesome name="bank" size={48} color="#D1D5DB" />
-                            <Text style={styles.emptyText}>No accounts found</Text>
-                            <Text style={styles.emptySubtext}>Add an account first</Text>
+        <>
+            <CustomAlert
+                visible={alert.visible}
+                title={alert.config.title}
+                message={alert.config.message}
+                type={alert.config.type}
+                onDismiss={alert.hideAlert}
+                onConfirm={alert.config.onConfirm}
+                confirmText={alert.config.confirmText}
+                cancelText={alert.config.cancelText}
+            />
+            <Modal
+                visible={visible}
+                animationType="slide"
+                transparent
+                onRequestClose={onDismiss}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContainer}>
+                        <View style={styles.header}>
+                            <Text style={styles.title}>Quick Add</Text>
+                            <TouchableOpacity onPress={onDismiss}>
+                                <FontAwesome name="times" size={24} color="#6B7280" />
+                            </TouchableOpacity>
                         </View>
-                    ) : (
-                        <>
-                            <ScrollView
-                                ref={scrollViewRef}
-                                horizontal
-                                pagingEnabled={false}
-                                showsHorizontalScrollIndicator={false}
-                                onScroll={handleScroll}
-                                scrollEventThrottle={16}
-                                contentContainerStyle={styles.scrollContainer}
-                                snapToInterval={CARD_WIDTH + 20}
-                                decelerationRate="fast"
-                            >
-                                {accounts.map((account, index) => {
-                                    const newBalance = parseFloat(newBalances[account.id] || '0');
-                                    const difference = newBalance - account.balance;
-                                    const isDifferent = difference !== 0 && !isNaN(newBalance);
 
-                                    return (
-                                        <Card key={account.id} style={styles.accountCard}>
-                                            <Card.Content>
-                                                <View style={styles.accountHeader}>
-                                                    <View style={[styles.iconContainer, { backgroundColor: account.color + '20' }]}>
-                                                        <FontAwesome name="bank" size={24} color={account.color} />
+                        <Text style={styles.subtitle}>
+                            Update account balances - differences will be auto-adjusted
+                        </Text>
+
+                        {accounts.length === 0 ? (
+                            <View style={styles.emptyState}>
+                                <FontAwesome name="bank" size={48} color="#D1D5DB" />
+                                <Text style={styles.emptyText}>No accounts found</Text>
+                                <Text style={styles.emptySubtext}>Add an account first</Text>
+                            </View>
+                        ) : (
+                            <>
+                                <ScrollView
+                                    ref={scrollViewRef}
+                                    horizontal
+                                    pagingEnabled={false}
+                                    showsHorizontalScrollIndicator={false}
+                                    onScroll={handleScroll}
+                                    scrollEventThrottle={16}
+                                    contentContainerStyle={styles.scrollContainer}
+                                    snapToInterval={CARD_WIDTH + 20}
+                                    decelerationRate="fast"
+                                >
+                                    {accounts.map((account, index) => {
+                                        const newBalance = parseFloat(newBalances[account.id] || '0');
+                                        const difference = newBalance - account.balance;
+                                        const isDifferent = difference !== 0 && !isNaN(newBalance);
+
+                                        return (
+                                            <Card key={account.id} style={styles.accountCard}>
+                                                <Card.Content>
+                                                    <View style={styles.accountHeader}>
+                                                        <View style={[styles.iconContainer, { backgroundColor: account.color + '20' }]}>
+                                                            <FontAwesome name="bank" size={24} color={account.color} />
+                                                        </View>
+                                                        <Text style={styles.accountName}>{account.name}</Text>
                                                     </View>
-                                                    <Text style={styles.accountName}>{account.name}</Text>
-                                                </View>
 
-                                                <View style={styles.balanceInfo}>
-                                                    <Text style={styles.label}>Current Balance</Text>
-                                                    <Text style={styles.currentBalance}>
-                                                        {currency.symbol}{account.balance.toLocaleString()}
-                                                    </Text>
-                                                </View>
-
-                                                <TextInput
-                                                    label="New Balance"
-                                                    value={newBalances[account.id]}
-                                                    onChangeText={(value) => setNewBalances(prev => ({ ...prev, [account.id]: value }))}
-                                                    mode="outlined"
-                                                    keyboardType="numeric"
-                                                    style={styles.input}
-                                                    left={<TextInput.Affix text={currency.symbol} />}
-                                                />
-
-                                                {isDifferent && (
-                                                    <View style={[styles.differenceCard, { backgroundColor: difference > 0 ? '#D1FAE5' : '#FEE2E2' }]}>
-                                                        <FontAwesome
-                                                            name={difference > 0 ? 'arrow-down' : 'arrow-up'}
-                                                            size={16}
-                                                            color={difference > 0 ? '#10B981' : '#EF4444'}
-                                                        />
-                                                        <Text style={[styles.differenceText, { color: difference > 0 ? '#10B981' : '#EF4444' }]}>
-                                                            {difference > 0 ? 'Income' : 'Expense'}: {currency.symbol}{Math.abs(difference).toFixed(2)}
+                                                    <View style={styles.balanceInfo}>
+                                                        <Text style={styles.label}>Current Balance</Text>
+                                                        <Text style={styles.currentBalance}>
+                                                            {currency.symbol}{account.balance.toLocaleString()}
                                                         </Text>
                                                     </View>
-                                                )}
 
-                                                <Button
-                                                    mode="contained"
-                                                    onPress={() => handleUpdateBalance(account)}
-                                                    loading={loading}
-                                                    disabled={!isDifferent || loading}
-                                                    style={styles.updateButton}
-                                                >
-                                                    Update Balance
-                                                </Button>
-                                            </Card.Content>
-                                        </Card>
-                                    );
-                                })}
-                            </ScrollView>
+                                                    <TextInput
+                                                        label="New Balance"
+                                                        value={newBalances[account.id]}
+                                                        onChangeText={(value) => setNewBalances(prev => ({ ...prev, [account.id]: value }))}
+                                                        mode="outlined"
+                                                        keyboardType="numeric"
+                                                        style={styles.input}
+                                                        left={<TextInput.Affix text={currency.symbol} />}
+                                                    />
 
-                            {/* Pagination Dots */}
-                            <View style={styles.pagination}>
-                                {accounts.map((_, index) => (
-                                    <TouchableOpacity
-                                        key={index}
-                                        onPress={() => scrollToIndex(index)}
-                                        style={[
-                                            styles.dot,
-                                            currentIndex === index && styles.dotActive,
-                                        ]}
-                                    />
-                                ))}
-                            </View>
+                                                    {isDifferent && (
+                                                        <View style={[styles.differenceCard, { backgroundColor: difference > 0 ? '#D1FAE5' : '#FEE2E2' }]}>
+                                                            <FontAwesome
+                                                                name={difference > 0 ? 'arrow-down' : 'arrow-up'}
+                                                                size={16}
+                                                                color={difference > 0 ? '#10B981' : '#EF4444'}
+                                                            />
+                                                            <Text style={[styles.differenceText, { color: difference > 0 ? '#10B981' : '#EF4444' }]}>
+                                                                {difference > 0 ? 'Income' : 'Expense'}: {currency.symbol}{Math.abs(difference).toFixed(2)}
+                                                            </Text>
+                                                        </View>
+                                                    )}
 
-                            <Button
-                                mode="outlined"
-                                onPress={onDismiss}
-                                style={styles.closeButton}
-                            >
-                                Close
-                            </Button>
-                        </>
-                    )}
+                                                    <Button
+                                                        mode="contained"
+                                                        onPress={() => handleUpdateBalance(account)}
+                                                        loading={loading}
+                                                        disabled={!isDifferent || loading}
+                                                        style={styles.updateButton}
+                                                    >
+                                                        Update Balance
+                                                    </Button>
+                                                </Card.Content>
+                                            </Card>
+                                        );
+                                    })}
+                                </ScrollView>
+
+                                {/* Pagination Dots */}
+                                <View style={styles.pagination}>
+                                    {accounts.map((_, index) => (
+                                        <TouchableOpacity
+                                            key={index}
+                                            onPress={() => scrollToIndex(index)}
+                                            style={[
+                                                styles.dot,
+                                                currentIndex === index && styles.dotActive,
+                                            ]}
+                                        />
+                                    ))}
+                                </View>
+
+                                <Button
+                                    mode="outlined"
+                                    onPress={onDismiss}
+                                    style={styles.closeButton}
+                                >
+                                    Close
+                                </Button>
+                            </>
+                        )}
+                    </View>
                 </View>
-            </View>
-        </Modal>
+            </Modal>
+        </>
     );
 }
 
@@ -273,11 +287,16 @@ const styles = StyleSheet.create({
     },
     modalContainer: {
         backgroundColor: '#FFFFFF',
-        borderTopLeftRadius: 24,
-        borderTopRightRadius: 24,
-        paddingTop: 20,
+        borderTopLeftRadius: 32,
+        borderTopRightRadius: 32,
+        paddingTop: 24,
         paddingBottom: 40,
         maxHeight: '85%',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+        elevation: 12,
     },
     header: {
         flexDirection: 'row',
@@ -303,8 +322,12 @@ const styles = StyleSheet.create({
     },
     accountCard: {
         width: CARD_WIDTH,
-        borderRadius: 16,
-        elevation: 2,
+        borderRadius: 24,
+        elevation: 3,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
     },
     accountHeader: {
         flexDirection: 'row',
@@ -312,12 +335,12 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     iconContainer: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
+        width: 56,
+        height: 56,
+        borderRadius: 28,
         alignItems: 'center',
         justifyContent: 'center',
-        marginRight: 12,
+        marginRight: 16,
     },
     accountName: {
         fontSize: 18,
@@ -345,17 +368,17 @@ const styles = StyleSheet.create({
     differenceCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 12,
-        borderRadius: 8,
+        padding: 16,
+        borderRadius: 16,
         marginBottom: 16,
-        gap: 8,
+        gap: 10,
     },
     differenceText: {
         fontSize: 14,
         fontWeight: '600',
     },
     updateButton: {
-        borderRadius: 8,
+        borderRadius: 16,
     },
     pagination: {
         flexDirection: 'row',
@@ -372,11 +395,14 @@ const styles = StyleSheet.create({
     },
     dotActive: {
         backgroundColor: '#3B82F6',
-        width: 24,
+        width: 28,
+        height: 8,
     },
     closeButton: {
         marginHorizontal: 20,
-        borderRadius: 8,
+        borderRadius: 16,
+        borderWidth: 2,
+        borderColor: '#E5E7EB',
     },
     emptyState: {
         padding: 40,

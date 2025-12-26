@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
 import Animated, {
     Easing,
@@ -11,6 +11,7 @@ import Animated, {
     withSpring,
     withTiming,
 } from 'react-native-reanimated';
+import Logo from './Logo';
 
 interface AnimatedSplashScreenProps {
     onFinish: () => void;
@@ -74,11 +75,7 @@ export default function AnimatedSplashScreen({ onFinish }: AnimatedSplashScreenP
             >
                 <View style={styles.content}>
                     <Animated.View style={[styles.logoContainer, logoAnimatedStyle]}>
-                        <Image
-                            source={require('../assets/images/logo.png')}
-                            style={styles.logo}
-                            resizeMode="contain"
-                        />
+                        <Logo width={80} height={80} />
                     </Animated.View>
 
                     <Animated.View style={textAnimatedStyle}>
@@ -114,10 +111,6 @@ const styles = StyleSheet.create({
         marginBottom: 32,
         borderWidth: 3,
         borderColor: 'rgba(255, 255, 255, 0.3)',
-    },
-    logo: {
-        width: 80,
-        height: 80,
     },
     appName: {
         fontSize: 42,
