@@ -39,6 +39,15 @@
           "icon": "./assets/images/icon.png",
           "color": "#ffffff"
         }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableShrinkResourcesInReleaseBuilds": true,
+            "enableProGuardInReleaseBuilds": true
+          }
+        }
       ]
     ],
     "experiments": {
