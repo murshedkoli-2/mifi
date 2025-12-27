@@ -5,7 +5,7 @@ import { Card, Text } from 'react-native-paper';
 
 interface AccountCardProps {
     name: string;
-    type: 'cash' | 'bank' | 'card' | 'savings';
+    type: 'cash' | 'bank' | 'card' | 'savings' | 'mobile-banking' | 'loan';
     balance: number;
     color: string;
     onPress?: () => void;
@@ -21,6 +21,8 @@ const getAccountIcon = (type: string): string => {
             return 'credit-card';
         case 'savings':
             return 'university';
+        case 'loan':
+            return 'money';
         default:
             return 'wallet';
     }
@@ -36,6 +38,8 @@ const getAccountLabel = (type: string): string => {
             return 'Credit Card';
         case 'savings':
             return 'Savings';
+        case 'loan':
+            return 'Loan';
         default:
             return 'Account';
     }

@@ -5,7 +5,7 @@ export interface Account {
     id: string;
     user_id: string;
     name: string;
-    type: 'cash' | 'bank' | 'card' | 'savings' | 'mobile-banking';
+    type: 'cash' | 'bank' | 'card' | 'savings' | 'mobile-banking' | 'loan';
     balance: number;
     color: string;
     account_number?: string;
@@ -53,7 +53,7 @@ export async function getAccounts(): Promise<Account[]> {
 
 export async function addAccount(account: {
     name: string;
-    type: 'cash' | 'bank' | 'card' | 'savings' | 'mobile-banking';
+    type: 'cash' | 'bank' | 'card' | 'savings' | 'mobile-banking' | 'loan';
     balance: number;
     color: string;
     account_number?: string;

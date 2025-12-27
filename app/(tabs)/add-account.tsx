@@ -12,13 +12,14 @@ const ACCOUNT_TYPES = [
     { value: 'card', label: 'Card', icon: 'credit-card', color: '#EF4444' },
     { value: 'savings', label: 'Savings', icon: 'piggy-bank-outline', color: '#8B5CF6' },
     { value: 'mobile-banking', label: 'Mobile Banking', icon: 'cellphone', color: '#F97316' },
+    { value: 'loan', label: 'Loan', icon: 'hand-coin-outline', color: '#EF4444' },
 ];
 
 export default function AddAccountScreen() {
     const router = useRouter();
     const { currency } = useSettings();
     const [name, setName] = useState('');
-    const [type, setType] = useState<'cash' | 'bank' | 'card' | 'savings' | 'mobile-banking'>('cash');
+    const [type, setType] = useState<'cash' | 'bank' | 'card' | 'savings' | 'mobile-banking' | 'loan'>('cash');
     const [balance, setBalance] = useState('');
     const [accountNumber, setAccountNumber] = useState('');
     const [loading, setLoading] = useState(false);
@@ -38,10 +39,16 @@ export default function AddAccountScreen() {
 
         setLoading(true);
         try {
+            // For loan accounts, the balance should be negative (representing debt)
+            let finalBalance = parseFloat(balance);
+            if (type === 'loan' && finalBalance > 0) {
+                finalBalance = -finalBalance;
+            }
+
             const result = await addAccount({
                 name: name.trim(),
                 type,
-                balance: parseFloat(balance),
+                balance: finalBalance,
                 color: selectedTypeColor,
                 account_number: accountNumber.trim() || undefined,
             });
@@ -159,7 +166,9 @@ export default function AddAccountScreen() {
                             left={<TextInput.Icon icon={currency.icon} />}
                         />
                         <Text style={styles.hint}>
-                            Enter the current balance in this account
+                            {type === 'loan'
+                                ? 'Enter the amount you owe'
+                                : 'Enter the current balance in this account'}
                         </Text>
                     </View>
 
