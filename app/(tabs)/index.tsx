@@ -189,7 +189,7 @@ export default function HomeScreen() {
             <Button
               mode="text"
               compact
-              onPress={() => console.log('View All')}
+              onPress={() => router.push('/transactions')}
             >
               View All
             </Button>

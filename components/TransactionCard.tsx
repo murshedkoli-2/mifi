@@ -73,7 +73,8 @@ const styles = StyleSheet.create({
     content: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 8,
+        paddingVertical: 12,
+        paddingHorizontal: 16,
     },
     iconCircle: {
         width: 40,
